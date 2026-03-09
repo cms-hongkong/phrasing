@@ -76,7 +76,7 @@
             color: #333;
         }
 
-        /* 最初的 Phrasing 樣式 */
+        /* 最初的 Phrasing 樣式：n 字型彩虹框 */
         .phrase-arc {
             position: absolute;
             top: -60px;
@@ -113,7 +113,6 @@
         
         #feedback { margin-top: 20px; font-size: 1.5rem; font-weight: bold; min-height: 1.5em; }
 
-        /* 完成畫面 */
         .congrats {
             font-size: 2.5rem !important;
             color: #ff4081 !important;
@@ -137,12 +136,13 @@
 
 <div id="control-panel">
     <div id="feedback"></div>
-    <button id="check-btn" class="btn" onclick="verify()">檢查分句</button>
+    <button id="check-btn" class="btn" onclick="verify()">檢查答案</button>
     <button id="next-btn" class="btn" onclick="nextQuestion()">下一題</button>
-    <button id="restart-btn" class="btn" onclick="resetGame()">重新開始新回合</button>
+    <button id="restart-btn" class="btn" onclick="resetGame()">重新開始挑戰</button>
 </div>
 
 <script>
+    // 修正音符圖形：2分音符使用 𝅗𝅥 (Half Note)
     const PATTERNS = {
         2: ['♩♩', '♫♩', '♩♫', '𝅗𝅥'],
         3: ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩']
@@ -164,6 +164,7 @@
         document.getElementById('check-btn').style.display = 'inline-block';
         document.getElementById('current-q').innerText = questionCount;
 
+        // 隨機題庫：2拍或3拍，每2小節或4小節標記一次
         currentBeat = Math.random() > 0.5 ? 2 : 3;
         currentRule = Math.random() > 0.5 ? 2 : 4;
 
@@ -191,7 +192,7 @@
             selectedPositions.add(index);
             const arc = document.createElement('div');
             arc.className = 'phrase-arc';
-            // 回復最初的計算方式
+            // 寬度計算：跨越指定的小節數
             arc.style.width = `calc(${currentRule * 100}% + 4px)`;
             arc.style.right = '-2px'; 
             element.appendChild(arc);
@@ -219,13 +220,13 @@
                 document.getElementById('check-btn').style.display = 'none';
                 document.getElementById('restart-btn').style.display = 'inline-block';
             } else {
-                fb.innerText = "🌟 做得太棒了！位置完全正確！";
+                fb.innerText = "🌟 位置完全正確！你對樂句很熟悉呢！";
                 fb.style.color = "#2e7d32";
                 document.getElementById('check-btn').style.display = 'none';
                 document.getElementById('next-btn').style.display = 'inline-block';
             }
         } else {
-            fb.innerText = "❌ 位置好像不對，再數數看？";
+            fb.innerText = "❌ 位置好像不對，再數數看規則？";
             fb.style.color = "#d32f2f";
         }
     }
