@@ -8,6 +8,7 @@
         :root {
             --sky-blue: #f0faff;
             --bar-line: #333;
+            /* 定義漂亮的彩虹漸層 */
             --rainbow: linear-gradient(to right, #ff4081, #ffeb3b, #4caf50, #00bcd4, #9c27b0);
         }
 
@@ -21,7 +22,6 @@
             min-height: 100vh;
         }
 
-        /* 題號進度條 */
         #progress-bar {
             margin-top: 15px;
             font-size: 1.2rem;
@@ -29,7 +29,6 @@
             font-weight: bold;
         }
 
-        /* 題目資訊 */
         #task-info {
             background: white;
             padding: 20px 40px;
@@ -45,13 +44,12 @@
         .task-msg { font-size: 1.4rem; color: #0277bd; }
         .highlight { color: #e91e63; font-size: 2rem; font-weight: bold; }
 
-        /* 樂譜流水線 */
         #music-line {
             display: flex;
             align-items: center;
             width: 95vw;
             max-width: 1000px;
-            margin-top: 80px;
+            margin-top: 100px; /* 增加間距給弧形 */
             padding: 20px 0;
             position: relative;
         }
@@ -76,24 +74,28 @@
             color: #333;
         }
 
+        /* --- 修改重點：弧形分句線 --- */
         .phrase-arc {
             position: absolute;
-            top: -60px;
-            height: 70px;
-            border: 5px solid;
-            border-image: var(--rainbow) 1;
-            border-bottom: none;
-            border-radius: 120px 120px 0 0;
+            top: -70px; /* 往上移動 */
+            height: 80px;
+            background: var(--rainbow);
+            /* 建立橢圓弧形頂部 */
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
             pointer-events: none;
             z-index: 10;
+            /* 使用 mask 鏤空中間，只留下 6px 的邊框線條 */
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #fff 100%);
+            mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #fff 100%);
         }
 
         .breath-bird {
             position: absolute;
-            right: -15px;
-            top: -45px;
+            right: -18px;
+            top: -35px;
             font-size: 30px;
             z-index: 15;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1));
         }
 
         #control-panel { margin-top: 60px; text-align: center; padding-bottom: 50px; }
@@ -112,7 +114,6 @@
         
         #feedback { margin-top: 20px; font-size: 1.5rem; font-weight: bold; min-height: 1.5em; }
 
-        /* 完成畫面 */
         .congrats {
             font-size: 2.5rem !important;
             color: #ff4081 !important;
@@ -128,7 +129,7 @@
 <div id="task-info">
     <div class="task-msg">
         這是 <span id="beat-display" class="highlight">?</span> 拍子的歌<br>
-        請每 <span id="rule-display" class="highlight">?</span> 小節畫一條「分句線」🌈
+        請每 <span id="rule-display" class="highlight">?</span> 小節畫一條「樂句弧線」🌈
     </div>
 </div>
 
@@ -143,8 +144,8 @@
 
 <script>
     const PATTERNS = {
-        2: ['♩♩', '♫♩', '♩♫', '𝅗𝅥'],
-        3: ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩']
+        2: ['♩♩', '♫♩', '♩♫', '𝅗𝅥'],
+        3: ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩']
     };
 
     let currentBeat = 2;
@@ -163,7 +164,6 @@
         document.getElementById('check-btn').style.display = 'inline-block';
         document.getElementById('current-q').innerText = questionCount;
 
-        // 隨機題庫
         currentBeat = Math.random() > 0.5 ? 2 : 3;
         currentRule = Math.random() > 0.5 ? 2 : 4;
 
@@ -188,11 +188,14 @@
             if (arc) arc.remove();
             if (bird) bird.remove();
         } else {
+            // 限制使用者只能在正確的倍數位置點擊，或自由點擊後由檢查判定
             selectedPositions.add(index);
+            
             const arc = document.createElement('div');
             arc.className = 'phrase-arc';
-            arc.style.width = `calc(${currentRule * 100}% + 4px)`;
-            arc.style.right = '-2px'; 
+            // 計算弧線寬度：跨越 N 小節
+            arc.style.width = `calc(${currentRule * 100}% - 10px)`;
+            arc.style.left = `calc(${(1 - currentRule) * 100}% + 5px)`; 
             element.appendChild(arc);
 
             const bird = document.createElement('div');
