@@ -3,264 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>彩虹分句小老師 | 音樂遊戲</title>
-    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <title>視覺分句練習器</title>
     <style>
-        :root {
-            --primary: #ffeb3b;
-            --btn-color: #ff5722;
-            --bg-sky: #e3f2fd;
-        }
-
         body {
             margin: 0;
-            font-family: 'ZCOOL KuaiLe', 'Microsoft JhengHei', sans-serif;
-            background-color: var(--bg-sky);
+            background: #f0f9ff;
+            font-family: 'Microsoft JhengHei', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 100vh;
             overflow: hidden;
-            user-select: none;
         }
 
-        /* 頂部資訊 */
-        #header {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        h1 { color: #1565c0; font-size: 2.5rem; margin-bottom: 5px; }
-        p { color: #546e7a; font-size: 1.2rem; }
-
-        /* 遊戲舞台 */
-        #game-stage {
-            flex-grow: 1;
-            width: 90%;
-            max-width: 800px;
-            position: relative;
+        #ui-layer { margin-top: 20px; text-align: center; }
+        
+        /* 歌曲軌道 */
+        #track-container {
+            width: 90vw;
+            height: 400px;
             background: white;
-            border-radius: 30px;
+            border: 5px solid #bddbff;
+            border-radius: 20px;
+            position: relative;
             margin: 20px 0;
-            border: 8px solid #90caf9;
-            box-shadow: 0 10px 0 #64b5f6;
             overflow: hidden;
         }
 
-        /* 彩虹畫布 */
-        canvas {
+        /* 句子方塊 */
+        .phrase-block {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-        }
-
-        /* 歌詞文字 */
-        #lyrics-container {
-            position: absolute;
-            bottom: 30%;
-            width: 100%;
-            text-align: center;
-            font-size: 2rem;
-            color: #333;
-            transition: 0.3s;
-        }
-
-        /* 控制區域 */
-        #controls {
-            padding-bottom: 40px;
-            width: 100%;
+            height: 60px;
+            background: #e1f5fe;
+            border: 2px dashed #03a9f4;
+            border-radius: 10px;
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 20px;
+            font-size: 1.5rem;
+            color: #01579b;
+            font-weight: bold;
         }
 
-        .main-btn {
-            padding: 20px 60px;
-            font-size: 1.8rem;
-            font-family: 'ZCOOL KuaiLe', sans-serif;
+        /* 掃描球 */
+        #scanner-ball {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #ff5722;
+            border-radius: 50%;
+            top: 15px;
+            left: 0;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(255,87,34,0.5);
+        }
+
+        /* 判定區（分句點） */
+        .goal-post {
+            position: absolute;
+            width: 20px;
+            height: 100px;
+            background: rgba(255, 235, 59, 0.3);
+            border-left: 3px solid #fbc02d;
+            z-index: 5;
+        }
+
+        /* 底部按鈕 */
+        #btn-action {
+            padding: 20px 80px;
+            font-size: 2rem;
+            background: #4caf50;
+            color: white;
             border: none;
             border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
-        }
-
-        #phrase-btn {
-            background-color: var(--btn-color);
-            color: white;
-            box-shadow: 0 8px 0 #bf360c;
-        }
-
-        #phrase-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 4px 0 #bf360c;
-        }
-
-        #start-btn {
-            background-color: #4caf50;
-            color: white;
             box-shadow: 0 8px 0 #2e7d32;
+            cursor: pointer;
         }
 
-        /* 特效 */
-        .feedback {
+        #btn-action:active { transform: translateY(4px); box-shadow: 0 4px 0 #2e7d32; }
+
+        .success-arc {
             position: absolute;
-            top: 20%;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 3rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: 0.5s;
+            border: 5px solid #4caf50;
+            border-bottom: none;
+            border-radius: 50% 50% 0 0;
+            animation: grow 0.5s ease-out;
         }
 
-        .show-feedback { opacity: 1; transform: translateX(-50%) translateY(-20px); }
+        @keyframes grow { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-<div id="header">
-    <h1>🌈 彩虹分句師 🌈</h1>
-    <p>聽聽音樂，唱完一句時請按下「換氣！」</p>
+<div id="ui-layer">
+    <h1>👀 視覺分句練習 👀</h1>
+    <p>小球跑到黃色線時，請準確按下「分句！」</p>
 </div>
 
-<div id="game-stage">
-    <canvas id="rainbowCanvas"></canvas>
-    <div id="feedback" class="feedback">🌟 太棒了！ 🌟</div>
-    <div id="lyrics-container">準備好點擊開始了嗎？</div>
-</div>
+<div id="track-container" id="stage">
+    <div id="scanner-ball"></div>
+    </div>
 
-<div id="controls">
-    <button id="start-btn" class="main-btn" onclick="startGame()">▶️ 開始遊戲</button>
-    <button id="phrase-btn" class="main-btn" onclick="checkPhrase()" style="display:none;">🌬️ 換氣！</button>
-</div>
+<button id="btn-action">點擊開始</button>
 
 <script>
-    const canvas = document.getElementById('rainbowCanvas');
-    const ctx = canvas.getContext('2d');
-    const lyricsEl = document.getElementById('lyrics-container');
-    const feedbackEl = document.getElementById('feedback');
-    const phraseBtn = document.getElementById('phrase-btn');
-    const startBtn = document.getElementById('start-btn');
+    const stage = document.getElementById('track-container');
+    const ball = document.getElementById('scanner-ball');
+    const btn = document.getElementById('btn-action');
 
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-
-    // 二年級教材常見歌曲：《小星星》
-    const songData = [
-        { time: 4, text: "一閃一閃亮晶晶" },
-        { time: 8, text: "滿天都是小星星" },
-        { time: 12, text: "放在天空放光明" },
-        { time: 16, text: "好像許多小眼睛" }
+    const songPhrases = [
+        { text: "小星星亮晶晶", x: 100, w: 200 },
+        { text: "滿天都是小眼睛", x: 350, w: 200 },
+        { text: "掛在天空放光明", x: 600, w: 200 }
     ];
 
-    let currentPhrase = 0;
-    let startTime = 0;
-    let isPlaying = false;
-    let rainbowStep = 0;
+    let isRunning = false;
+    let posX = 0;
+    let currentGoal = 0;
 
-    function startGame() {
-        isPlaying = true;
-        currentPhrase = 0;
-        startTime = performance.now();
-        startBtn.style.display = 'none';
-        phraseBtn.style.display = 'block';
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        lyricsEl.innerText = songData[0].text;
-        requestAnimationFrame(update);
-        playNote(261.63, 0.5); // 模擬啟動音
-    }
+    // 初始化場景
+    songPhrases.forEach((p, i) => {
+        // 畫出句子方塊
+        const block = document.createElement('div');
+        block.className = 'phrase-block';
+        block.style.left = p.x + 'px';
+        block.style.top = '100px';
+        block.style.width = p.w + 'px';
+        block.innerText = p.text;
+        stage.appendChild(block);
 
-    function update(timestamp) {
-        if (!isPlaying) return;
+        // 畫出判定線（分句點就在方塊的末端）
+        const post = document.createElement('div');
+        post.className = 'goal-post';
+        post.style.left = (p.x + p.w) + 'px';
+        post.style.top = '80px';
+        stage.appendChild(post);
+    });
 
-        const elapsed = (timestamp - startTime) / 1000;
-
-        // 更新歌詞
-        if (currentPhrase < songData.length && elapsed > songData[currentPhrase].time - 0.5) {
-            // 等待玩家點擊，文字變色提醒
-            lyricsEl.style.color = "#ff5722";
-        }
-
-        // 自動失敗判定（如果超過時間太久沒按）
-        if (currentPhrase < songData.length && elapsed > songData[currentPhrase].time + 1.5) {
-            nextPhrase(false);
-        }
-
-        if (currentPhrase < songData.length) {
-            requestAnimationFrame(update);
+    btn.addEventListener('click', () => {
+        if (!isRunning) {
+            isRunning = true;
+            btn.innerText = "分句！";
+            animate();
         } else {
-            endGame();
+            checkHit();
         }
-    }
+    });
 
-    function checkPhrase() {
-        const elapsed = (performance.now() - startTime) / 1000;
-        const target = songData[currentPhrase].time;
+    function animate() {
+        if (!isRunning) return;
+        posX += 2; // 移動速度
+        ball.style.left = posX + 'px';
+        ball.style.top = (100 + Math.sin(posX * 0.05) * 20) + 'px'; // 讓小球像在唱歌一樣跳動
 
-        if (Math.abs(elapsed - target) < 1.0) {
-            showFeedback(true);
-            drawRainbowPart(currentPhrase);
-            nextPhrase(true);
+        if (posX > 1000) {
+            isRunning = false;
+            btn.innerText = "重新挑戰";
+            posX = 0;
         } else {
-            showFeedback(false);
+            requestAnimationFrame(animate);
         }
     }
 
-    function nextPhrase(success) {
-        currentPhrase++;
-        if (currentPhrase < songData.length) {
-            lyricsEl.innerText = songData[currentPhrase].text;
-            lyricsEl.style.color = "#333";
+    function checkHit() {
+        const targetX = songPhrases[currentGoal].x + songPhrases[currentGoal].w;
+        const dist = Math.abs(posX - targetX);
+
+        if (dist < 30) {
+            // 成功：畫出一道彩虹連接到下一句
+            const arc = document.createElement('div');
+            arc.className = 'success-arc';
+            arc.style.left = targetX + 'px';
+            arc.style.top = '100px';
+            arc.style.width = '50px';
+            arc.style.height = '30px';
+            stage.appendChild(arc);
+            
+            currentGoal++;
+            if(currentGoal >= songPhrases.length) currentGoal = 0;
         }
-    }
-
-    function drawRainbowPart(index) {
-        const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
-        const segmentWidth = canvas.width / songData.length;
-        const startX = index * segmentWidth + 50;
-        const endX = (index + 1) * segmentWidth - 50;
-        const centerY = canvas.height / 2;
-
-        ctx.lineWidth = 10;
-        colors.forEach((color, i) => {
-            ctx.beginPath();
-            ctx.strokeStyle = color;
-            ctx.arc((startX + endX) / 2, centerY, (endX - startX) / 2, Math.PI, 0);
-            ctx.stroke();
-            ctx.translate(0, 5); // 讓彩虹有層次
-        });
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
-
-    function showFeedback(isGood) {
-        feedbackEl.innerText = isGood ? "🌟 太棒了！ 🌟" : "⚠️ 還沒唱完喔 ⚠️";
-        feedbackEl.style.color = isGood ? "#4caf50" : "#f44336";
-        feedbackEl.classList.add('show-feedback');
-        setTimeout(() => feedbackEl.classList.remove('show-feedback'), 1000);
-    }
-
-    function endGame() {
-        isPlaying = false;
-        lyricsEl.innerText = "🎉 恭喜完成！你是彩虹分句大師！";
-        startBtn.innerText = "再玩一次";
-        startBtn.style.display = 'block';
-        phraseBtn.style.display = 'none';
-    }
-
-    // 簡單的音頻合成器發聲
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playNote(freq, duration) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.frequency.value = freq;
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        osc.stop(audioCtx.currentTime + duration);
     }
 </script>
-
 </body>
 </html>
