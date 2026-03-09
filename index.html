@@ -21,7 +21,22 @@
             min-height: 100vh;
         }
 
-        /* 題號進度條 */
+        /* 開始遊戲遮罩 */
+        #startOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--sky-blue);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
         #progress-bar {
             margin-top: 15px;
             font-size: 1.2rem;
@@ -29,7 +44,6 @@
             font-weight: bold;
         }
 
-        /* 題目資訊 */
         #task-info {
             background: white;
             padding: 20px 40px;
@@ -45,7 +59,6 @@
         .task-msg { font-size: 1.4rem; color: #0277bd; }
         .highlight { color: #e91e63; font-size: 2rem; font-weight: bold; }
 
-        /* 樂譜流水線 */
         #music-line {
             display: flex;
             align-items: center;
@@ -58,25 +71,29 @@
 
         .measure {
             flex: 1;
-            height: 100px;
+            height: 120px;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             border-right: 2px solid var(--bar-line);
             cursor: pointer;
+            transition: background 0.2s;
         }
 
+        .measure:hover { background: rgba(255,255,255,0.4); }
         .measure:first-child { border-left: 2px solid var(--bar-line); }
         .measure:last-child { border-right: 6px double var(--bar-line); }
 
+        /* 音符樣式優化 */
         .notes {
-            font-size: 45px;
-            letter-spacing: 4px;
-            color: #333;
+            font-size: 60px; /* 加大音符 */
+            letter-spacing: 10px; /* 增加音符間距 */
+            color: #222;
+            user-select: none;
+            line-height: 1;
         }
 
-        /* 最初的 Phrasing 樣式：n 字型彩虹框 */
         .phrase-arc {
             position: absolute;
             top: -60px;
@@ -106,9 +123,9 @@
             cursor: pointer;
             transition: 0.2s;
             font-weight: bold;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.1);
         }
-        #check-btn { background: #ffca28; color: #5d4037; box-shadow: 0 5px 0 #ffa000; }
-        #next-btn { background: #8bc34a; color: white; display: none; box-shadow: 0 5px 0 #689f38; }
+        #next-btn { background: #8bc34a; color: white; box-shadow: 0 5px 0 #689f38; }
         #restart-btn { background: #03a9f4; color: white; display: none; box-shadow: 0 5px 0 #0288d1; }
         
         #feedback { margin-top: 20px; font-size: 1.5rem; font-weight: bold; min-height: 1.5em; }
@@ -123,6 +140,12 @@
 </head>
 <body>
 
+<div id="startOverlay">
+    <h1 style="font-size: 3rem; color: #0277bd; margin-bottom: 20px;">音符分句大師 🎵</h1>
+    <p style="font-size: 1.5rem; color: #555; margin-bottom: 40px;">準備好 10 題挑戰了嗎？</p>
+    <button class="btn" style="background: #ffca28; color: #5d4037; box-shadow: 0 8px 0 #ffa000; font-size: 2rem;" onclick="startGame()">開始遊戲 🎮</button>
+</div>
+
 <div id="progress-bar">進度：第 <span id="current-q">1</span> / 10 題</div>
 
 <div id="task-info">
@@ -136,13 +159,16 @@
 
 <div id="control-panel">
     <div id="feedback"></div>
-    <button id="check-btn" class="btn" onclick="verify()">檢查答案</button>
-    <button id="next-btn" class="btn" onclick="nextQuestion()">下一題</button>
+    <button id="next-btn" class="btn" onclick="handleNextStep()" style="display:none;">下一題</button>
     <button id="restart-btn" class="btn" onclick="resetGame()">重新開始挑戰</button>
 </div>
 
 <script>
-    // 修正音符圖形：2分音符使用 𝅗𝅥 (Half Note)
+    /* 音符對照表：
+       ♩ = 四分音符 (Quarter Note)
+       ♫ = 八分音符對 (Eighth Notes beamed)
+       𝅗𝅥 = 二分音符 (Half Note) - 這裡使用標準音樂字元
+    */
     const PATTERNS = {
         2: ['♩♩', '♫♩', '♩♫', '𝅗𝅥'],
         3: ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩']
@@ -152,19 +178,25 @@
     let currentRule = 2;
     let selectedPositions = new Set();
     let questionCount = 1;
+    let isAnswered = false;
     const totalQuestions = 10;
+
+    function startGame() {
+        document.getElementById('startOverlay').style.display = 'none';
+        setupQuestion();
+    }
 
     function setupQuestion() {
         const line = document.getElementById('music-line');
         line.innerHTML = '';
         selectedPositions.clear();
+        isAnswered = false;
+        
         document.getElementById('feedback').innerText = '';
         document.getElementById('feedback').classList.remove('congrats');
         document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('check-btn').style.display = 'inline-block';
         document.getElementById('current-q').innerText = questionCount;
 
-        // 隨機題庫：2拍或3拍，每2小節或4小節標記一次
         currentBeat = Math.random() > 0.5 ? 2 : 3;
         currentRule = Math.random() > 0.5 ? 2 : 4;
 
@@ -176,23 +208,23 @@
             m.className = 'measure';
             const notesText = PATTERNS[currentBeat][Math.floor(Math.random() * PATTERNS[currentBeat].length)];
             m.innerHTML = `<span class="notes">${notesText}</span>`;
-            m.onclick = () => handlePhrase(i, m);
+            m.onclick = () => handleChoice(i, m);
             line.appendChild(m);
         }
     }
 
-    function handlePhrase(index, element) {
+    function handleChoice(index, element) {
+        if (isAnswered) return; // 答對後鎖定，不能再點
+
+        // 切換選擇狀態
         if (selectedPositions.has(index)) {
             selectedPositions.delete(index);
-            const arc = element.querySelector('.phrase-arc');
-            const bird = element.querySelector('.breath-bird');
-            if (arc) arc.remove();
-            if (bird) bird.remove();
+            element.querySelector('.phrase-arc')?.remove();
+            element.querySelector('.breath-bird')?.remove();
         } else {
             selectedPositions.add(index);
             const arc = document.createElement('div');
             arc.className = 'phrase-arc';
-            // 寬度計算：跨越指定的小節數
             arc.style.width = `calc(${currentRule * 100}% + 4px)`;
             arc.style.right = '-2px'; 
             element.appendChild(arc);
@@ -202,36 +234,36 @@
             bird.innerText = '🐦';
             element.appendChild(bird);
         }
+
+        // 即時檢查是否符合規則
+        checkProgress();
     }
 
-    function verify() {
-        let answers = [];
-        for (let j = currentRule; j <= 8; j += currentRule) answers.push(j);
+    function checkProgress() {
+        let correctAnswers = [];
+        for (let j = currentRule; j <= 8; j += currentRule) correctAnswers.push(j);
 
-        const win = selectedPositions.size === answers.length && 
-                    answers.every(a => selectedPositions.has(a));
+        const isCorrect = selectedPositions.size === correctAnswers.length && 
+                          correctAnswers.every(a => selectedPositions.has(a));
 
         const fb = document.getElementById('feedback');
-        if (win) {
+        if (isCorrect) {
+            isAnswered = true; // 鎖定當前題目
             if (questionCount >= totalQuestions) {
                 fb.innerText = "🎊 太棒了！你完成了 10 題挑戰！ 🎊";
                 fb.classList.add('congrats');
                 fb.style.color = "#ff4081";
-                document.getElementById('check-btn').style.display = 'none';
                 document.getElementById('restart-btn').style.display = 'inline-block';
             } else {
-                fb.innerText = "🌟 位置完全正確！你對樂句很熟悉呢！";
+                fb.innerText = "🌟 位置完全正確！你好棒！";
                 fb.style.color = "#2e7d32";
-                document.getElementById('check-btn').style.display = 'none';
+                document.getElementById('next-btn').innerText = "下一題";
                 document.getElementById('next-btn').style.display = 'inline-block';
             }
-        } else {
-            fb.innerText = "❌ 位置好像不對，再數數看規則？";
-            fb.style.color = "#d32f2f";
         }
     }
 
-    function nextQuestion() {
+    function handleNextStep() {
         questionCount++;
         setupQuestion();
     }
@@ -241,8 +273,6 @@
         document.getElementById('restart-btn').style.display = 'none';
         setupQuestion();
     }
-
-    setupQuestion();
 </script>
 </body>
 </html>
