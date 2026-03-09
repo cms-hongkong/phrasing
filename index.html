@@ -92,7 +92,7 @@
             line-height: 1;
         }
 
-        /* 最初要求的樣式：n 字型彩虹邊框 */
+        /* n 字型彩虹邊框樣式 */
         .phrase-arc {
             position: absolute;
             top: -65px;
@@ -141,8 +141,7 @@
 <body>
 
 <div id="startOverlay">
-    <h1 style="font-size: 3.5rem; color: #ff4081; margin-bottom: 20px;">音符分句大師 🎵</h1>
-    <p style="font-size: 1.5rem; color: #555; margin-bottom: 40px;">挑戰 10 題 ♩ 與 ♫ 的分句練習！</p>
+    <h1 style="font-size: 3.5rem; color: #ff4081; margin-bottom: 40px;">音符分句大師 🎵</h1>
     <button class="btn" style="background: #ffca28; color: #5d4037; font-size: 2rem;" onclick="startGame()">開始遊戲 🎮</button>
 </div>
 
@@ -164,11 +163,6 @@
 </div>
 
 <script>
-    /* 音符編碼：
-       ♩ = 四分音符 (1拍)
-       ♫ = 八分音符對 (0.5 + 0.5 = 1拍)
-       已刪除所有 𝅗𝅥 (二分音符) 組合
-    */
     const PATTERNS_2 = ['♩♩', '♫♩', '♩♫', '♫♫'];
     const PATTERNS_3 = ['♩♩♩', '♫♩♩', '♩♫♩', '♩♩♫', '♫♫♩', '♫♫♫'];
 
@@ -195,7 +189,6 @@
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('current-q').innerText = questionCount;
 
-        // 隨機決定本題是 2 拍還是 3 拍
         currentBeat = Math.random() > 0.5 ? 2 : 3;
         currentRule = Math.random() > 0.5 ? 2 : 4;
 
@@ -248,7 +241,7 @@
             isLocked = true;
             const fb = document.getElementById('feedback');
             if (questionCount >= totalQuestions) {
-                fb.innerText = "🎊 太棒了！你順利完成了 10 題節奏挑戰！ 🎊";
+                fb.innerText = "🎊 太棒了！你順利完成了 10 題挑戰！ 🎊";
                 fb.classList.add('congrats');
                 fb.style.color = "#ff4081";
                 document.getElementById('restart-btn').style.display = 'inline-block';
