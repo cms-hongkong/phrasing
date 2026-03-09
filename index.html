@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>視覺分句練習器</title>
+    <title>音符剪刀手 - 學習分句</title>
     <style>
         body {
             margin: 0;
-            background: #f0f9ff;
+            background: #fff9c4;
             font-family: 'Microsoft JhengHei', sans-serif;
             display: flex;
             flex-direction: column;
@@ -15,173 +15,178 @@
             overflow: hidden;
         }
 
-        #ui-layer { margin-top: 20px; text-align: center; }
-        
-        /* 歌曲軌道 */
-        #track-container {
-            width: 90vw;
-            height: 400px;
+        #ui { text-align: center; margin: 20px; }
+        h1 { color: #f57c00; }
+        .hint { color: #666; font-size: 1.1rem; }
+
+        /* 五線譜區域 */
+        #staff {
+            width: 100vw;
+            height: 250px;
             background: white;
-            border: 5px solid #bddbff;
-            border-radius: 20px;
+            border-top: 4px solid #333;
+            border-bottom: 4px solid #333;
             position: relative;
-            margin: 20px 0;
-            overflow: hidden;
+            margin-top: 50px;
+            /* 繪製五線譜的線 */
+            background-image: linear-gradient(#eee 1px, transparent 1px);
+            background-size: 100% 20px;
         }
 
-        /* 句子方塊 */
-        .phrase-block {
+        /* 判定區域（剪刀位置） */
+        #cut-zone {
             position: absolute;
-            height: 60px;
-            background: #e1f5fe;
-            border: 2px dashed #03a9f4;
-            border-radius: 10px;
+            left: 150px;
+            top: 0;
+            width: 80px;
+            height: 100%;
+            border: 4px dashed #ff5252;
+            background: rgba(255, 82, 82, 0.1);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 10px;
+        }
+
+        /* 音符樣式 */
+        .note {
+            position: absolute;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: #01579b;
-            font-weight: bold;
+            font-size: 50px; /* 使用 Emoji 或符號 */
+            transition: transform 0.1s;
         }
 
-        /* 掃描球 */
-        #scanner-ball {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background: #ff5722;
-            border-radius: 50%;
-            top: 15px;
-            left: 0;
-            z-index: 10;
-            box-shadow: 0 0 10px rgba(255,87,34,0.5);
-        }
-
-        /* 判定區（分句點） */
-        .goal-post {
-            position: absolute;
-            width: 20px;
-            height: 100px;
-            background: rgba(255, 235, 59, 0.3);
-            border-left: 3px solid #fbc02d;
-            z-index: 5;
-        }
-
-        /* 底部按鈕 */
-        #btn-action {
+        /* 按鈕 */
+        #btn-cut {
+            margin-top: 40px;
             padding: 20px 80px;
             font-size: 2rem;
-            background: #4caf50;
+            background: #ff5252;
             color: white;
             border: none;
             border-radius: 50px;
-            box-shadow: 0 8px 0 #2e7d32;
+            box-shadow: 0 8px 0 #d32f2f;
             cursor: pointer;
         }
 
-        #btn-action:active { transform: translateY(4px); box-shadow: 0 4px 0 #2e7d32; }
+        #btn-cut:active { transform: translateY(4px); box-shadow: 0 4px 0 #d32f2f; }
 
-        .success-arc {
+        .balloon {
             position: absolute;
-            border: 5px solid #4caf50;
-            border-bottom: none;
-            border-radius: 50% 50% 0 0;
-            animation: grow 0.5s ease-out;
+            font-size: 40px;
+            animation: floatUp 1.5s forwards;
         }
 
-        @keyframes grow { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
-<div id="ui-layer">
-    <h1>👀 視覺分句練習 👀</h1>
-    <p>小球跑到黃色線時，請準確按下「分句！」</p>
+<div id="ui">
+    <h1>🎵 音符剪刀手 🎵</h1>
+    <p class="hint">當<b>空心音符 (長音)</b> 或 <b>休止符</b> 進入紅色框框時，快按下剪刀！</p>
 </div>
 
-<div id="track-container" id="stage">
-    <div id="scanner-ball"></div>
-    </div>
+<div id="staff">
+    <div id="cut-zone">✂️</div>
+    <div id="note-stream"></div>
+</div>
 
-<button id="btn-action">點擊開始</button>
+<button id="btn-cut">✂️ 剪斷分句！</button>
 
 <script>
-    const stage = document.getElementById('track-container');
-    const ball = document.getElementById('scanner-ball');
-    const btn = document.getElementById('btn-action');
+    const stream = document.getElementById('note-stream');
+    const cutZone = document.getElementById('cut-zone');
+    
+    // 定義音符類型
+    const TYPE = {
+        SHORT: '♩',  // 四分音符 (實心)
+        LONG: '🚀',   // 我們可以用火箭或空心圓代表長音 𝅗𝅥
+        REST: '💤'   // 休止符 𝄽
+    };
 
-    const songPhrases = [
-        { text: "小星星亮晶晶", x: 100, w: 200 },
-        { text: "滿天都是小眼睛", x: 350, w: 200 },
-        { text: "掛在天空放光明", x: 600, w: 200 }
+    // 模擬一段旋律的音符序列
+    const melody = [
+        TYPE.SHORT, TYPE.SHORT, TYPE.SHORT, TYPE.LONG, // 第一句結束
+        TYPE.SHORT, TYPE.SHORT, TYPE.SHORT, TYPE.LONG, // 第二句結束
+        TYPE.SHORT, TYPE.SHORT, TYPE.SHORT, TYPE.REST  // 第三句結束
     ];
 
-    let isRunning = false;
-    let posX = 0;
-    let currentGoal = 0;
+    let posX = window.innerWidth;
+    let notesData = [];
 
-    // 初始化場景
-    songPhrases.forEach((p, i) => {
-        // 畫出句子方塊
-        const block = document.createElement('div');
-        block.className = 'phrase-block';
-        block.style.left = p.x + 'px';
-        block.style.top = '100px';
-        block.style.width = p.w + 'px';
-        block.innerText = p.text;
-        stage.appendChild(block);
+    // 初始化音符
+    function initNotes() {
+        let spacing = 100;
+        melody.forEach((type, i) => {
+            const n = document.createElement('div');
+            n.className = 'note';
+            
+            // 視覺區分：二年級學生對形狀很敏感
+            if (type === TYPE.LONG) {
+                n.innerHTML = '⚪'; // 空心代表長音
+                n.style.color = '#2196F3';
+            } else if (type === TYPE.REST) {
+                n.innerHTML = '⚡'; // 閃電代表休止符
+                n.style.color = '#9c27b0';
+            } else {
+                n.innerHTML = '⚫'; // 實心代表短音
+                n.style.color = '#333';
+            }
 
-        // 畫出判定線（分句點就在方塊的末端）
-        const post = document.createElement('div');
-        post.className = 'goal-post';
-        post.style.left = (p.x + p.w) + 'px';
-        post.style.top = '80px';
-        stage.appendChild(post);
-    });
-
-    btn.addEventListener('click', () => {
-        if (!isRunning) {
-            isRunning = true;
-            btn.innerText = "分句！";
-            animate();
-        } else {
-            checkHit();
-        }
-    });
+            n.style.left = (i * spacing) + 'px';
+            n.style.top = '100px';
+            stream.appendChild(n);
+            notesData.push({ el: n, x: i * spacing, type: type });
+        });
+    }
 
     function animate() {
-        if (!isRunning) return;
-        posX += 2; // 移動速度
-        ball.style.left = posX + 'px';
-        ball.style.top = (100 + Math.sin(posX * 0.05) * 20) + 'px'; // 讓小球像在唱歌一樣跳動
+        posX -= 2.5; // 移動速度
+        stream.style.transform = `translateX(${posX}px)`;
 
-        if (posX > 1000) {
-            isRunning = false;
-            btn.innerText = "重新挑戰";
-            posX = 0;
-        } else {
-            requestAnimationFrame(animate);
-        }
+        if (posX < -1500) posX = window.innerWidth;
+        requestAnimationFrame(animate);
     }
 
-    function checkHit() {
-        const targetX = songPhrases[currentGoal].x + songPhrases[currentGoal].w;
-        const dist = Math.abs(posX - targetX);
+    document.getElementById('btn-cut').addEventListener('click', () => {
+        let hit = false;
+        
+        notesData.forEach(n => {
+            const currentX = posX + n.x;
+            const dist = Math.abs(currentX - 150); // 150 是剪刀位置
 
-        if (dist < 30) {
-            // 成功：畫出一道彩虹連接到下一句
-            const arc = document.createElement('div');
-            arc.className = 'success-arc';
-            arc.style.left = targetX + 'px';
-            arc.style.top = '100px';
-            arc.style.width = '50px';
-            arc.style.height = '30px';
-            stage.appendChild(arc);
-            
-            currentGoal++;
-            if(currentGoal >= songPhrases.length) currentGoal = 0;
+            if (dist < 40 && (n.type === TYPE.LONG || n.type === TYPE.REST)) {
+                hit = true;
+                createBalloon(currentX);
+            }
+        });
+
+        if (hit) {
+            console.log("分句成功！");
         }
+    });
+
+    function createBalloon(x) {
+        const b = document.createElement('div');
+        b.className = 'balloon';
+        b.innerText = '🎈';
+        b.style.left = '150px';
+        b.style.top = '100px';
+        document.getElementById('staff').appendChild(b);
+        setTimeout(() => b.remove(), 1500);
     }
+
+    initNotes();
+    animate();
 </script>
 </body>
 </html>
