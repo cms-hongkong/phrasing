@@ -14,8 +14,7 @@
         body {
             margin: 0;
             background-color: var(--sky-blue);
-            /* 優化音樂符號顯示字體 */
-            font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Music', sans-serif;
+            font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Music', 'PingFang HK', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -79,8 +78,10 @@
             justify-content: center;
             border-right: 2px solid var(--bar-line);
             cursor: pointer;
+            transition: background 0.2s;
         }
 
+        .measure:hover { background: rgba(255,255,255,0.4); }
         .measure:first-child { border-left: 2px solid var(--bar-line); }
         .measure:last-child { border-right: 6px double var(--bar-line); }
 
@@ -141,7 +142,7 @@
 
 <div id="startOverlay">
     <h1 style="font-size: 3.5rem; color: #ff4081; margin-bottom: 20px;">音符分句大師 🎵</h1>
-    <p style="font-size: 1.5rem; color: #555; margin-bottom: 40px;">挑戰 10 題 3 拍子樂句練習！</p>
+    <p style="font-size: 1.5rem; color: #555; margin-bottom: 40px;">挑戰 10 題 ♩ 與 ♫ 的分句練習！</p>
     <button class="btn" style="background: #ffca28; color: #5d4037; font-size: 2rem;" onclick="startGame()">開始遊戲 🎮</button>
 </div>
 
@@ -149,7 +150,7 @@
 
 <div id="task-info">
     <div class="task-msg">
-        這是 <span id="beat-display" class="highlight">3</span> 拍子的歌<br>
+        這是一首 <span id="beat-display" class="highlight">?</span> 拍子的曲子<br>
         請每 <span id="rule-display" class="highlight">?</span> 小節做一次標記 🌈
     </div>
 </div>
@@ -159,17 +160,19 @@
 <div id="control-panel">
     <div id="feedback"></div>
     <button id="next-btn" class="btn" onclick="nextQuestion()">下一題</button>
-    <button id="restart-btn" class="btn" onclick="resetGame()">重新挑戰回合</button>
+    <button id="restart-btn" class="btn" onclick="resetGame()">重新挑戰</button>
 </div>
 
 <script>
-    /* 音符編碼說明：
-       ♩ = 四分音符 (實心)
-       𝅗𝅥 = 二分音符 (空心)
-       ♫ = 八分音符對
+    /* 音符編碼：
+       ♩ = 四分音符 (1拍)
+       ♫ = 八分音符對 (0.5 + 0.5 = 1拍)
+       已刪除所有 𝅗𝅥 (二分音符) 組合
     */
-    const PATTERNS_3_BEAT = ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩'];
+    const PATTERNS_2 = ['♩♩', '♫♩', '♩♫', '♫♫'];
+    const PATTERNS_3 = ['♩♩♩', '♫♩♩', '♩♫♩', '♩♩♫', '♫♫♩', '♫♫♫'];
 
+    let currentBeat = 3;
     let currentRule = 2;
     let selectedPositions = new Set();
     let questionCount = 1;
@@ -192,15 +195,19 @@
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('current-q').innerText = questionCount;
 
-        // 題目設置：固定為 3 拍子
+        // 隨機決定本題是 2 拍還是 3 拍
+        currentBeat = Math.random() > 0.5 ? 2 : 3;
         currentRule = Math.random() > 0.5 ? 2 : 4;
+
+        document.getElementById('beat-display').innerText = currentBeat;
         document.getElementById('rule-display').innerText = currentRule;
 
-        // 生成 8 個小節
+        const currentBank = currentBeat === 2 ? PATTERNS_2 : PATTERNS_3;
+
         for (let i = 1; i <= 8; i++) {
             const m = document.createElement('div');
             m.className = 'measure';
-            const notesText = PATTERNS_3_BEAT[Math.floor(Math.random() * PATTERNS_3_BEAT.length)];
+            const notesText = currentBank[Math.floor(Math.random() * currentBank.length)];
             m.innerHTML = `<span class="notes">${notesText}</span>`;
             m.onclick = () => handleMeasureClick(i, m);
             line.appendChild(m);
@@ -218,7 +225,6 @@
             selectedPositions.add(index);
             const arc = document.createElement('div');
             arc.className = 'phrase-arc';
-            // 寬度計算：跨越指定的小節數
             arc.style.width = `calc(${currentRule * 100}% + 4px)`;
             arc.style.right = '-2px'; 
             element.appendChild(arc);
@@ -228,7 +234,6 @@
             bird.innerText = '🐦';
             element.appendChild(bird);
         }
-        
         checkAnswer();
     }
 
@@ -243,7 +248,7 @@
             isLocked = true;
             const fb = document.getElementById('feedback');
             if (questionCount >= totalQuestions) {
-                fb.innerText = "🎊 太棒了！你順利完成了 10 題 3 拍子挑戰！ 🎊";
+                fb.innerText = "🎊 太棒了！你順利完成了 10 題節奏挑戰！ 🎊";
                 fb.classList.add('congrats');
                 fb.style.color = "#ff4081";
                 document.getElementById('restart-btn').style.display = 'inline-block';
