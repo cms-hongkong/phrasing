@@ -51,7 +51,7 @@
             align-items: center;
             width: 95vw;
             max-width: 1000px;
-            margin-top: 100px; /* 增加上方空間給弧線 */
+            margin-top: 80px;
             padding: 20px 0;
             position: relative;
         }
@@ -74,22 +74,18 @@
             font-size: 45px;
             letter-spacing: 4px;
             color: #333;
-            z-index: 5;
         }
 
-        /* --- 修改重點：向下彎曲（雨傘狀）的彩虹弧線 --- */
         .phrase-arc {
             position: absolute;
-            top: -75px; /* 置於音符上方 */
-            height: 80px;
-            background: var(--rainbow);
-            /* 圓角設定：左上與右上為 50%，形成像遮一樣向下彎的弧度 */
-            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            top: -60px;
+            height: 70px;
+            border: 5px solid;
+            border-image: var(--rainbow) 1;
+            border-bottom: none;
+            border-radius: 120px 120px 0 0;
             pointer-events: none;
             z-index: 10;
-            /* 使用 mask 鏤空，只留下 6px 的線條 */
-            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #fff 100%);
-            mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #fff 100%);
         }
 
         .breath-bird {
@@ -98,7 +94,6 @@
             top: -45px;
             font-size: 30px;
             z-index: 15;
-            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1));
         }
 
         #control-panel { margin-top: 60px; text-align: center; padding-bottom: 50px; }
@@ -117,6 +112,7 @@
         
         #feedback { margin-top: 20px; font-size: 1.5rem; font-weight: bold; min-height: 1.5em; }
 
+        /* 完成畫面 */
         .congrats {
             font-size: 2.5rem !important;
             color: #ff4081 !important;
@@ -132,7 +128,7 @@
 <div id="task-info">
     <div class="task-msg">
         這是 <span id="beat-display" class="highlight">?</span> 拍子的歌<br>
-        請每 <span id="rule-display" class="highlight">?</span> 小節做一次標記 🌈
+        請每 <span id="rule-display" class="highlight">?</span> 小節畫一條「分句線」🌈
     </div>
 </div>
 
@@ -167,6 +163,7 @@
         document.getElementById('check-btn').style.display = 'inline-block';
         document.getElementById('current-q').innerText = questionCount;
 
+        // 隨機題庫
         currentBeat = Math.random() > 0.5 ? 2 : 3;
         currentRule = Math.random() > 0.5 ? 2 : 4;
 
@@ -192,13 +189,10 @@
             if (bird) bird.remove();
         } else {
             selectedPositions.add(index);
-            
             const arc = document.createElement('div');
             arc.className = 'phrase-arc';
-            // 弧線跨度根據規則動態計算寬度
-            arc.style.width = `calc(${currentRule * 100}% - 10px)`;
-            // 弧線向左延伸，覆蓋對應的小節數
-            arc.style.left = `calc(${(1 - currentRule) * 100}% + 5px)`; 
+            arc.style.width = `calc(${currentRule * 100}% + 4px)`;
+            arc.style.right = '-2px'; 
             element.appendChild(arc);
 
             const bird = document.createElement('div');
@@ -230,7 +224,7 @@
                 document.getElementById('next-btn').style.display = 'inline-block';
             }
         } else {
-            fb.innerText = "❌ 標記位置好像不對，再數數看？";
+            fb.innerText = "❌ 弧線位置好像不對，再數數看？";
             fb.style.color = "#d32f2f";
         }
     }
