@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音符分句大師 - 樂譜練習版</title>
+    <title>音符分句大師 - 10題挑戰版</title>
     <style>
         :root {
             --sky-blue: #f0faff;
@@ -21,15 +21,25 @@
             min-height: 100vh;
         }
 
+        /* 題號進度條 */
+        #progress-bar {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            color: #0277bd;
+            font-weight: bold;
+        }
+
         /* 題目資訊 */
         #task-info {
             background: white;
             padding: 20px 40px;
-            margin: 25px;
+            margin: 15px;
             border-radius: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             text-align: center;
             border: 3px solid #b3e5fc;
+            width: 80%;
+            max-width: 600px;
         }
 
         .task-msg { font-size: 1.4rem; color: #0277bd; }
@@ -53,22 +63,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border-right: 2px solid var(--bar-line); /* 單小節線 */
+            border-right: 2px solid var(--bar-line);
             cursor: pointer;
         }
 
-        /* 開頭與結尾的特殊處理 */
         .measure:first-child { border-left: 2px solid var(--bar-line); }
-        .measure:last-child { border-right: 6px double var(--bar-line); } /* 結尾雙小節線 */
+        .measure:last-child { border-right: 6px double var(--bar-line); }
 
-        /* 音符樣式 */
         .notes {
             font-size: 45px;
             letter-spacing: 4px;
             color: #333;
         }
 
-        /* 彩虹弧線 */
         .phrase-arc {
             position: absolute;
             top: -60px;
@@ -81,7 +88,6 @@
             z-index: 10;
         }
 
-        /* 呼吸小鳥 */
         .breath-bird {
             position: absolute;
             right: -15px;
@@ -90,8 +96,7 @@
             z-index: 15;
         }
 
-        /* 控制區 */
-        #control-panel { margin-top: 60px; text-align: center; }
+        #control-panel { margin-top: 60px; text-align: center; padding-bottom: 50px; }
         .btn {
             padding: 12px 40px;
             font-size: 1.6rem;
@@ -99,13 +104,26 @@
             border: none;
             cursor: pointer;
             transition: 0.2s;
+            font-weight: bold;
         }
         #check-btn { background: #ffca28; color: #5d4037; box-shadow: 0 5px 0 #ffa000; }
         #next-btn { background: #8bc34a; color: white; display: none; box-shadow: 0 5px 0 #689f38; }
-        #feedback { margin-top: 20px; font-size: 1.3rem; font-weight: bold; min-height: 1.5em; }
+        #restart-btn { background: #03a9f4; color: white; display: none; box-shadow: 0 5px 0 #0288d1; }
+        
+        #feedback { margin-top: 20px; font-size: 1.5rem; font-weight: bold; min-height: 1.5em; }
+
+        /* 完成畫面 */
+        .congrats {
+            font-size: 2.5rem !important;
+            color: #ff4081 !important;
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
 <body>
+
+<div id="progress-bar">進度：第 <span id="current-q">1</span> / 10 題</div>
 
 <div id="task-info">
     <div class="task-msg">
@@ -119,11 +137,11 @@
 <div id="control-panel">
     <div id="feedback"></div>
     <button id="check-btn" class="btn" onclick="verify()">檢查分句</button>
-    <button id="next-btn" class="btn" onclick="setup()">下一題</button>
+    <button id="next-btn" class="btn" onclick="nextQuestion()">下一題</button>
+    <button id="restart-btn" class="btn" onclick="resetGame()">重新開始新回合</button>
 </div>
 
 <script>
-    // 根據教科書設計多樣化音符
     const PATTERNS = {
         2: ['♩♩', '♫♩', '♩♫', '𝅗𝅥'],
         3: ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩']
@@ -132,14 +150,18 @@
     let currentBeat = 2;
     let currentRule = 2;
     let selectedPositions = new Set();
+    let questionCount = 1;
+    const totalQuestions = 10;
 
-    function setup() {
+    function setupQuestion() {
         const line = document.getElementById('music-line');
         line.innerHTML = '';
         selectedPositions.clear();
         document.getElementById('feedback').innerText = '';
+        document.getElementById('feedback').classList.remove('congrats');
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('check-btn').style.display = 'inline-block';
+        document.getElementById('current-q').innerText = questionCount;
 
         // 隨機題庫
         currentBeat = Math.random() > 0.5 ? 2 : 3;
@@ -148,17 +170,11 @@
         document.getElementById('beat-display').innerText = currentBeat;
         document.getElementById('rule-display').innerText = currentRule;
 
-        // 生成 8 小節
         for (let i = 1; i <= 8; i++) {
             const m = document.createElement('div');
             m.className = 'measure';
-            
-            const pool = PATTERNS[currentBeat];
-            const notesText = pool[Math.floor(Math.random() * pool.length)];
-            
+            const notesText = PATTERNS[currentBeat][Math.floor(Math.random() * PATTERNS[currentBeat].length)];
             m.innerHTML = `<span class="notes">${notesText}</span>`;
-            
-            // 點擊事件：切換分句線
             m.onclick = () => handlePhrase(i, m);
             line.appendChild(m);
         }
@@ -173,15 +189,12 @@
             if (bird) bird.remove();
         } else {
             selectedPositions.add(index);
-            
-            // 創建彩虹弧線，寬度跨越設定的小節數量
             const arc = document.createElement('div');
             arc.className = 'phrase-arc';
             arc.style.width = `calc(${currentRule * 100}% + 4px)`;
             arc.style.right = '-2px'; 
             element.appendChild(arc);
 
-            // 創建小鳥標記 (換氣提示)
             const bird = document.createElement('div');
             bird.className = 'breath-bird';
             bird.innerText = '🐦';
@@ -198,17 +211,36 @@
 
         const fb = document.getElementById('feedback');
         if (win) {
-            fb.innerText = "🌟 畫得太棒了！分句完全正確！";
-            fb.style.color = "#2e7d32";
-            document.getElementById('check-btn').style.display = 'none';
-            document.getElementById('next-btn').style.display = 'inline-block';
+            if (questionCount >= totalQuestions) {
+                fb.innerText = "🎊 太棒了！你完成了 10 題挑戰！ 🎊";
+                fb.classList.add('congrats');
+                fb.style.color = "#ff4081";
+                document.getElementById('check-btn').style.display = 'none';
+                document.getElementById('restart-btn').style.display = 'inline-block';
+            } else {
+                fb.innerText = "🌟 畫得太棒了！分句完全正確！";
+                fb.style.color = "#2e7d32";
+                document.getElementById('check-btn').style.display = 'none';
+                document.getElementById('next-btn').style.display = 'inline-block';
+            }
         } else {
             fb.innerText = "❌ 弧線位置好像不對，再數數看？";
             fb.style.color = "#d32f2f";
         }
     }
 
-    setup();
+    function nextQuestion() {
+        questionCount++;
+        setupQuestion();
+    }
+
+    function resetGame() {
+        questionCount = 1;
+        document.getElementById('restart-btn').style.display = 'none';
+        setupQuestion();
+    }
+
+    setupQuestion();
 </script>
 </body>
 </html>
