@@ -14,7 +14,8 @@
         body {
             margin: 0;
             background-color: var(--sky-blue);
-            font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif;
+            /* 優化音樂符號顯示字體 */
+            font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Music', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -78,26 +79,23 @@
             justify-content: center;
             border-right: 2px solid var(--bar-line);
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .measure:hover { background: rgba(255,255,255,0.4); }
         .measure:first-child { border-left: 2px solid var(--bar-line); }
         .measure:last-child { border-right: 6px double var(--bar-line); }
 
-        /* 音符樣式優化 */
         .notes {
-            font-size: 60px; /* 加大音符 */
-            letter-spacing: 10px; /* 增加音符間距 */
+            font-size: 55px; 
+            letter-spacing: 8px;
             color: #222;
-            user-select: none;
             line-height: 1;
         }
 
+        /* 最初要求的樣式：n 字型彩虹邊框 */
         .phrase-arc {
             position: absolute;
-            top: -60px;
-            height: 70px;
+            top: -65px;
+            height: 75px;
             border: 5px solid;
             border-image: var(--rainbow) 1;
             border-bottom: none;
@@ -121,11 +119,12 @@
             border-radius: 40px;
             border: none;
             cursor: pointer;
-            transition: 0.2s;
             font-weight: bold;
             box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+            transition: 0.2s;
         }
-        #next-btn { background: #8bc34a; color: white; box-shadow: 0 5px 0 #689f38; }
+        
+        #next-btn { background: #8bc34a; color: white; display: none; box-shadow: 0 5px 0 #689f38; }
         #restart-btn { background: #03a9f4; color: white; display: none; box-shadow: 0 5px 0 #0288d1; }
         
         #feedback { margin-top: 20px; font-size: 1.5rem; font-weight: bold; min-height: 1.5em; }
@@ -141,16 +140,16 @@
 <body>
 
 <div id="startOverlay">
-    <h1 style="font-size: 3rem; color: #0277bd; margin-bottom: 20px;">音符分句大師 🎵</h1>
-    <p style="font-size: 1.5rem; color: #555; margin-bottom: 40px;">準備好 10 題挑戰了嗎？</p>
-    <button class="btn" style="background: #ffca28; color: #5d4037; box-shadow: 0 8px 0 #ffa000; font-size: 2rem;" onclick="startGame()">開始遊戲 🎮</button>
+    <h1 style="font-size: 3.5rem; color: #ff4081; margin-bottom: 20px;">音符分句大師 🎵</h1>
+    <p style="font-size: 1.5rem; color: #555; margin-bottom: 40px;">挑戰 10 題 3 拍子樂句練習！</p>
+    <button class="btn" style="background: #ffca28; color: #5d4037; font-size: 2rem;" onclick="startGame()">開始遊戲 🎮</button>
 </div>
 
 <div id="progress-bar">進度：第 <span id="current-q">1</span> / 10 題</div>
 
 <div id="task-info">
     <div class="task-msg">
-        這是 <span id="beat-display" class="highlight">?</span> 拍子的歌<br>
+        這是 <span id="beat-display" class="highlight">3</span> 拍子的歌<br>
         請每 <span id="rule-display" class="highlight">?</span> 小節做一次標記 🌈
     </div>
 </div>
@@ -159,26 +158,22 @@
 
 <div id="control-panel">
     <div id="feedback"></div>
-    <button id="next-btn" class="btn" onclick="handleNextStep()" style="display:none;">下一題</button>
-    <button id="restart-btn" class="btn" onclick="resetGame()">重新開始挑戰</button>
+    <button id="next-btn" class="btn" onclick="nextQuestion()">下一題</button>
+    <button id="restart-btn" class="btn" onclick="resetGame()">重新挑戰回合</button>
 </div>
 
 <script>
-    /* 音符對照表：
-       ♩ = 四分音符 (Quarter Note)
-       ♫ = 八分音符對 (Eighth Notes beamed)
-       𝅗𝅥 = 二分音符 (Half Note) - 這裡使用標準音樂字元
+    /* 音符編碼說明：
+       ♩ = 四分音符 (實心)
+       𝅗𝅥 = 二分音符 (空心)
+       ♫ = 八分音符對
     */
-    const PATTERNS = {
-        2: ['♩♩', '♫♩', '♩♫', '𝅗𝅥'],
-        3: ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩']
-    };
+    const PATTERNS_3_BEAT = ['♩♩♩', '♫♩♩', '♩♫♩', '♩𝅗𝅥', '𝅗𝅥♩'];
 
-    let currentBeat = 2;
     let currentRule = 2;
     let selectedPositions = new Set();
     let questionCount = 1;
-    let isAnswered = false;
+    let isLocked = false;
     const totalQuestions = 10;
 
     function startGame() {
@@ -190,33 +185,31 @@
         const line = document.getElementById('music-line');
         line.innerHTML = '';
         selectedPositions.clear();
-        isAnswered = false;
+        isLocked = false;
         
         document.getElementById('feedback').innerText = '';
         document.getElementById('feedback').classList.remove('congrats');
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('current-q').innerText = questionCount;
 
-        currentBeat = Math.random() > 0.5 ? 2 : 3;
+        // 題目設置：固定為 3 拍子
         currentRule = Math.random() > 0.5 ? 2 : 4;
-
-        document.getElementById('beat-display').innerText = currentBeat;
         document.getElementById('rule-display').innerText = currentRule;
 
+        // 生成 8 個小節
         for (let i = 1; i <= 8; i++) {
             const m = document.createElement('div');
             m.className = 'measure';
-            const notesText = PATTERNS[currentBeat][Math.floor(Math.random() * PATTERNS[currentBeat].length)];
+            const notesText = PATTERNS_3_BEAT[Math.floor(Math.random() * PATTERNS_3_BEAT.length)];
             m.innerHTML = `<span class="notes">${notesText}</span>`;
-            m.onclick = () => handleChoice(i, m);
+            m.onclick = () => handleMeasureClick(i, m);
             line.appendChild(m);
         }
     }
 
-    function handleChoice(index, element) {
-        if (isAnswered) return; // 答對後鎖定，不能再點
+    function handleMeasureClick(index, element) {
+        if (isLocked) return;
 
-        // 切換選擇狀態
         if (selectedPositions.has(index)) {
             selectedPositions.delete(index);
             element.querySelector('.phrase-arc')?.remove();
@@ -225,6 +218,7 @@
             selectedPositions.add(index);
             const arc = document.createElement('div');
             arc.className = 'phrase-arc';
+            // 寬度計算：跨越指定的小節數
             arc.style.width = `calc(${currentRule * 100}% + 4px)`;
             arc.style.right = '-2px'; 
             element.appendChild(arc);
@@ -234,36 +228,34 @@
             bird.innerText = '🐦';
             element.appendChild(bird);
         }
-
-        // 即時檢查是否符合規則
-        checkProgress();
+        
+        checkAnswer();
     }
 
-    function checkProgress() {
-        let correctAnswers = [];
-        for (let j = currentRule; j <= 8; j += currentRule) correctAnswers.push(j);
+    function checkAnswer() {
+        let answers = [];
+        for (let j = currentRule; j <= 8; j += currentRule) answers.push(j);
 
-        const isCorrect = selectedPositions.size === correctAnswers.length && 
-                          correctAnswers.every(a => selectedPositions.has(a));
+        const win = selectedPositions.size === answers.length && 
+                    answers.every(a => selectedPositions.has(a));
 
-        const fb = document.getElementById('feedback');
-        if (isCorrect) {
-            isAnswered = true; // 鎖定當前題目
+        if (win) {
+            isLocked = true;
+            const fb = document.getElementById('feedback');
             if (questionCount >= totalQuestions) {
-                fb.innerText = "🎊 太棒了！你完成了 10 題挑戰！ 🎊";
+                fb.innerText = "🎊 太棒了！你順利完成了 10 題 3 拍子挑戰！ 🎊";
                 fb.classList.add('congrats');
                 fb.style.color = "#ff4081";
                 document.getElementById('restart-btn').style.display = 'inline-block';
             } else {
                 fb.innerText = "🌟 位置完全正確！你好棒！";
                 fb.style.color = "#2e7d32";
-                document.getElementById('next-btn').innerText = "下一題";
                 document.getElementById('next-btn').style.display = 'inline-block';
             }
         }
     }
 
-    function handleNextStep() {
+    function nextQuestion() {
         questionCount++;
         setupQuestion();
     }
