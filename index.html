@@ -3,212 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小音樂家分句大師</title>
+    <title>彩虹分句畫家</title>
     <style>
-        :root {
-            --primary: #4a90e2;
-            --success: #66bb6a;
-            --error: #ef5350;
-            --staff-line: #333;
-        }
-
         body {
             margin: 0;
+            background: #e3f2fd; /* 天藍色背景，參考課本 */
             font-family: 'Microsoft JhengHei', sans-serif;
-            background: #f7f9fc;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
         }
 
-        /* 第一階段：題目提示 */
-        #quiz-header {
-            background: var(--primary);
-            color: white;
-            width: 100%;
-            padding: 20px;
-            text-align: center;
-            font-size: 2rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        /* 樂譜容器 */
-        #score-container {
-            margin-top: 50px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 第一行 4 小節 */
-            grid-gap: 0;
-            width: 90vw;
-            max-width: 1000px;
-            position: relative;
-        }
-
-        /* 小節樣式 */
-        .measure {
-            height: 120px;
-            border-right: 2px solid var(--staff-line);
-            position: relative;
+        #task-area {
             background: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            margin: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 3px solid #ffca28;
+            text-align: center;
+        }
+
+        .task-title { font-size: 1.5rem; color: #1565c0; }
+        .target { font-size: 2rem; color: #e91e63; font-weight: bold; }
+
+        /* 樂譜區 */
+        #stave-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            width: 90vw;
+            max-width: 900px;
+            margin-top: 60px;
+            gap: 0;
+            position: relative;
+        }
+
+        .bar {
+            height: 120px;
+            background: white;
+            border-right: 2px solid #333;
+            border-bottom: 2px solid #333;
+            border-top: 2px solid #333;
+            position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            /* 繪製五線譜 */
-            background-image: linear-gradient(var(--staff-line) 1px, transparent 1px);
-            background-size: 100% 20px;
+            justify-content: space-around;
             cursor: pointer;
         }
-
-        .measure:nth-child(4n) { border-right: 4px solid var(--staff-line); }
-        .measure:nth-child(n+5) { margin-top: 40px; } /* 第二行 */
-
-        /* 序號 */
-        .measure-num {
+        
+        /* 繪製五線譜線條 */
+        .bar::before {
+            content: '';
             position: absolute;
-            top: -25px;
-            left: 5px;
-            font-size: 14px;
-            color: #888;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
+            background-size: 100% 20px;
+            top: 0; left: 0;
         }
 
-        /* 分句彩虹線 */
-        .phrase-arc {
+        .bar:first-child { border-left: 4px solid #333; }
+        .bar:nth-child(4) { border-right: 4px solid #333; }
+        .bar:nth-child(5) { border-left: 4px solid #333; margin-top: 40px; }
+        .bar:nth-child(8) { border-right: 4px solid #333; margin-top: 40px; }
+
+        .bar-num { position: absolute; top: -25px; left: 5px; color: #777; font-size: 14px; }
+
+        /* 彩虹弧線 (教科書風格) */
+        .rainbow-arc {
             position: absolute;
-            top: -50px;
-            height: 60px;
-            border: 4px solid var(--success);
+            top: -60px;
+            height: 80px;
+            border: 6px solid;
+            border-image: linear-gradient(to right, red, orange, yellow, green, cyan, blue, purple) 1;
             border-bottom: none;
             border-radius: 100px 100px 0 0;
             pointer-events: none;
             z-index: 10;
         }
 
-        /* 控制區 */
-        #controls {
-            margin-top: 50px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
+        /* 小鳥提示 (換氣位) */
+        .bird-hint {
+            position: absolute;
+            right: -20px;
+            top: -40px;
+            font-size: 30px;
+            z-index: 15;
         }
 
+        /* 音符 */
+        .note { font-size: 40px; color: #333; z-index: 5; }
+
+        /* 按鈕區 */
+        #control-panel { margin-top: 50px; }
         .btn {
-            padding: 15px 50px;
+            padding: 15px 40px;
             font-size: 1.5rem;
-            border: none;
             border-radius: 30px;
+            border: none;
             cursor: pointer;
-            transition: 0.2s;
+            box-shadow: 0 4px 0 #999;
         }
-
-        #check-btn { background: #ff9800; color: white; box-shadow: 0 5px 0 #e68a00; }
-        #next-btn { background: var(--success); color: white; box-shadow: 0 5px 0 #4caf50; display: none; }
-
-        /* 結果提示 */
-        #result-msg { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
+        #check-btn { background: #ffca28; color: #5d4037; }
+        #next-btn { background: #4caf50; color: white; display: none; }
+        
+        #result { margin-top: 20px; font-size: 1.5rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="quiz-header">
-    題目：請為這首 <b id="beat-type">?</b> 拍樂曲進行 <b id="rule-type">?</b> 小節分句
+<div id="task-area">
+    <div class="task-title">
+        這首曲子是 <span id="beat-info" class="target">?</span> 拍子<br>
+        請每 <span id="phrase-info" class="target">?</span> 小節畫一條「分句線」🌈
+    </div>
 </div>
 
-<div id="score-container">
-    </div>
+<div id="stave-container"></div>
 
-<div id="controls">
-    <div id="result-msg"></div>
-    <button id="check-btn" class="btn" onclick="checkAnswers()">檢查我的分句</button>
-    <button id="next-btn" class="btn" onclick="initGame()">下一題</button>
+<div id="control-panel">
+    <div id="result"></div>
+    <button id="check-btn" class="btn" onclick="validate()">我畫好分句了！</button>
+    <button id="next-btn" class="btn" onclick="init()">下一題</button>
 </div>
 
 <script>
-    const scoreContainer = document.getElementById('score-container');
-    const beatTypeEl = document.getElementById('beat-type');
-    const ruleTypeEl = document.getElementById('rule-type');
-    const resultMsg = document.getElementById('result-msg');
-    
-    let targetRule = 2; // 分句規則：2小節或4小節
-    let userSelections = new Set(); // 記錄玩家在哪個小節後點擊了
+    let beatType = 2;
+    let phraseRule = 2;
+    let selectedBars = new Set();
 
-    // 初始化題目
-    function initGame() {
-        scoreContainer.innerHTML = '';
-        userSelections.clear();
-        resultMsg.innerText = '';
+    function init() {
+        const container = document.getElementById('stave-container');
+        container.innerHTML = '';
+        selectedBars.clear();
+        document.getElementById('result').innerText = '';
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('check-btn').style.display = 'block';
 
-        // 隨機決定是 2 小節分句還是 4 小節分句
-        targetRule = Math.random() > 0.5 ? 2 : 4;
-        const beat = Math.random() > 0.5 ? 2 : 3;
+        // 題目設置
+        beatType = Math.random() > 0.5 ? 2 : 3;
+        phraseRule = Math.random() > 0.5 ? 2 : 4;
+        document.getElementById('beat-info').innerText = beatType;
+        document.getElementById('phrase-info').innerText = phraseRule;
 
-        beatTypeEl.innerText = beat;
-        ruleTypeEl.innerText = targetRule;
-
-        // 生成 8 小節
         for (let i = 1; i <= 8; i++) {
-            const m = document.createElement('div');
-            m.className = 'measure';
-            m.innerHTML = `<span class="measure-num">${i}</span>` + (beat === 2 ? '♩♩' : '♩♩♩');
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.innerHTML = `<span class="bar-num">${i}</span>`;
             
-            // 點擊小節代表在該小節末尾「斷句」
-            m.onclick = () => togglePhrase(i, m);
-            scoreContainer.appendChild(m);
+            // 加入音符 (教科書風格的實心音符)
+            for(let j=0; j<beatType; j++) {
+                const n = document.createElement('span');
+                n.className = 'note';
+                n.innerText = '♩';
+                bar.appendChild(n);
+            }
+
+            bar.onclick = () => toggleArc(i, bar);
+            container.appendChild(bar);
         }
     }
 
-    function togglePhrase(index, element) {
-        if (userSelections.has(index)) {
-            userSelections.delete(index);
-            element.style.backgroundColor = 'white';
-            // 移除該小節上的彩虹線
-            const arc = element.querySelector('.phrase-arc');
-            if (arc) arc.remove();
+    function toggleArc(num, el) {
+        if (selectedBars.has(num)) {
+            selectedBars.delete(num);
+            const oldArc = el.querySelector('.rainbow-arc');
+            const oldBird = el.querySelector('.bird-hint');
+            if (oldArc) oldArc.remove();
+            if (oldBird) oldBird.remove();
         } else {
-            userSelections.add(index);
-            element.style.backgroundColor = '#e8f5e9';
-            
-            // 畫出彩虹線（從當前小節往前跨越 targetRule 小節）
+            selectedBars.add(num);
+            // 創建彩虹弧線
             const arc = document.createElement('div');
-            arc.className = 'phrase-arc';
-            // 簡單計算位置：寬度等於小節寬度 * 規則
-            const widthPercentage = 100 * targetRule;
-            arc.style.width = `calc(${widthPercentage}% - 10px)`;
+            arc.className = 'rainbow-arc';
+            // 寬度計算：根據分句規則跨越小節
+            arc.style.width = `calc(${100 * phraseRule}% - 10px)`;
             arc.style.right = '0';
-            element.appendChild(arc);
+            el.appendChild(arc);
+
+            // 創建換氣小鳥 (參考課本第13及15頁)
+            const bird = document.createElement('div');
+            bird.className = 'bird-hint';
+            bird.innerText = '🐦';
+            el.appendChild(bird);
         }
     }
 
-    function checkAnswers() {
-        let isCorrect = true;
-        const correctAnswers = targetRule === 2 ? [2, 4, 6, 8] : [4, 8];
+    function validate() {
+        let corrects = [];
+        for (let i = phraseRule; i <= 8; i += phraseRule) corrects.push(i);
 
-        // 檢查數量是否正確
-        if (userSelections.size !== correctAnswers.length) {
-            isCorrect = false;
-        } else {
-            // 檢查位置是否正確
-            correctAnswers.forEach(num => {
-                if (!userSelections.has(num)) isCorrect = false;
-            });
-        }
+        const isWin = selectedBars.size === corrects.length && 
+                      corrects.every(v => selectedBars.has(v));
 
-        if (isCorrect) {
-            resultMsg.innerText = "🌟 太聰明了！分句完全正確！";
-            resultMsg.style.color = "var(--success)";
+        const res = document.getElementById('result');
+        if (isWin) {
+            res.innerText = "🌟 畫得太棒了！就像課本一樣準確！";
+            res.style.color = "#2e7d32";
             document.getElementById('check-btn').style.display = 'none';
             document.getElementById('next-btn').style.display = 'block';
         } else {
-            resultMsg.innerText = "❌ 哎呀，再想一下，在哪裡換氣才對呢？";
-            resultMsg.style.color = "var(--error)";
+            res.innerText = "❌ 弧線的位置好像不太對，再數數看？";
+            res.style.color = "#d32f2f";
         }
     }
 
-    // 啟動遊戲
-    initGame();
+    init();
 </script>
 </body>
 </html>
