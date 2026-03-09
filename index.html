@@ -3,208 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2-3 Beat | Playable Alpha</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <title>2-3 Beat | Visual Trainer</title>
     <style>
         :root {
-            --primary-color: #00f2ff;
-            --secondary-color: #ff00ff;
-            --perfect-color: #ffeb3b;
-            --bg-color: #0a0a12;
+            --bg: #05050a;
+            --lane2: #00d2ff;
+            --lane3: #ff007b;
+            --grid-opacity: 0.15;
         }
 
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: white; font-family: sans-serif; overflow: hidden; touch-action: none; }
-        #game-container { position: relative; width: 100%; max-width: 500px; height: 100%; margin: 0 auto; background: #111; display: flex; flex-direction: column; }
-        
-        /* 頂部資訊 */
-        #hud { padding: 15px; display: flex; justify-content: space-between; font-family: 'Orbitron'; z-index: 10; background: rgba(0,0,0,0.5); }
-        
-        /* 遊戲舞台 */
-        #stage { flex-grow: 1; position: relative; width: 100%; background: linear-gradient(to bottom, #111, #222); overflow: hidden; }
-        .lane { position: absolute; width: 50%; height: 100%; border-right: 1px solid rgba(255,255,255,0.05); }
-        .lane-right { left: 50%; border-right: none; }
-        
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+
+        /* 遊戲主舞台 */
+        #stage {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* 軌道通用樣式 */
+        .lane {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+
+        /* 2 拍背景網格：每 50% 一條線 */
+        #lane-2 {
+            background-image: linear-gradient(rgba(0,210,255, var(--grid-opacity)) 2px, transparent 2px);
+            background-size: 100% 50%; /* 視覺上分成兩份 */
+        }
+
+        /* 3 拍背景網格：每 33.3% 一條線 */
+        #lane-3 {
+            background-image: linear-gradient(rgba(255,0,123, var(--grid-opacity)) 2px, transparent 2px);
+            background-size: 100% 33.33%; /* 視覺上分成三份 */
+        }
+
         /* 判定線 */
-        #judge-line { position: absolute; bottom: 80px; width: 100%; height: 4px; background: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); z-index: 5; }
-
-        /* 音符 */
-        .note { 
-            position: absolute; 
-            width: 80%; 
-            left: 10%; 
-            height: 20px; 
-            background: var(--primary-color); 
-            border-radius: 10px; 
-            box-shadow: 0 0 10px var(--primary-color);
+        .judge-line {
+            position: absolute;
+            bottom: 80px;
+            width: 100%;
+            height: 4px;
+            background: white;
+            box-shadow: 0 0 15px white;
+            z-index: 10;
         }
-        .note-right { background: var(--secondary-color); box-shadow: 0 0 10px var(--secondary-color); }
 
-        /* 按鈕 */
-        #controls { height: 120px; display: flex; gap: 5px; padding: 10px; }
-        .hit-btn { flex: 1; border: 2px solid #444; background: #222; color: white; border-radius: 10px; font-family: 'Orbitron'; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: 0.1s; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        .hit-btn:active { background: #444; transform: scale(0.98); }
+        /* 音符樣式 */
+        .note {
+            position: absolute;
+            width: 90%;
+            left: 5%;
+            height: 15px;
+            border-radius: 4px;
+            transition: transform 0.016s linear;
+        }
+        .note-2 { background: var(--lane2); box-shadow: 0 0 10px var(--lane2); }
+        .note-3 { background: var(--lane3); box-shadow: 0 0 10px var(--lane3); }
 
-        /* 判定反饋 */
-        #feedback { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-family: 'Orbitron'; font-size: 2.5rem; pointer-events: none; opacity: 0; z-index: 20; }
-        .anim-pop { animation: pop 0.3s ease-out; }
-        @keyframes pop { 0% { opacity:0; transform: translate(-50%,-50%) scale(0.5); } 50% { opacity:1; transform: translate(-50%,-50%) scale(1.1); } 100% { opacity:0; } }
+        /* 標籤 */
+        .lane-label {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px black;
+            z-index: 5;
+        }
 
-        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; }
-        #start-btn { padding: 15px 40px; font-family: 'Orbitron'; background: var(--primary-color); border: none; cursor: pointer; font-size: 1.2rem; margin-top: 20px; }
+        /* 控制區域 */
+        #controls {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            display: flex;
+            background: rgba(0,0,0,0.8);
+            z-index: 20;
+        }
+        .hit-zone {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-top: 2px solid #333;
+        }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="hud">
-        <div id="score">SCORE: 0</div>
-        <div id="combo">COMBO: 0</div>
+<div id="stage">
+    <div class="lane" id="lane-2">
+        <div class="lane-label" style="color: var(--lane2)">BINARY (1 - 2)</div>
+        <div class="judge-line"></div>
+        <div id="notes-2"></div>
     </div>
 
-    <div id="stage">
-        <div class="lane lane-left"></div>
-        <div class="lane lane-right"></div>
-        <div id="judge-line"></div>
-        <div id="feedback">PERFECT</div>
-        <div id="notes-layer"></div>
+    <div class="lane" id="lane-3">
+        <div class="lane-label" style="color: var(--lane3)">TERNARY (1 - 2 - 3)</div>
+        <div class="judge-line"></div>
+        <div id="notes-3"></div>
     </div>
 
     <div id="controls">
-        <div class="hit-btn" id="btn-0">LEFT</div>
-        <div class="hit-btn" id="btn-1">RIGHT</div>
-    </div>
-
-    <div id="overlay">
-        <h1 style="font-family:'Orbitron'; color:var(--primary-color)">2-3 BEAT</h1>
-        <p>按下 [F] 或 [J] 鍵，或點擊下方按鈕</p>
-        <button id="start-btn">START</button>
+        <div class="hit-zone">按 [F] 鍵</div>
+        <div class="hit-zone">按 [J] 鍵</div>
     </div>
 </div>
 
 <script>
-/**
- * 遊戲引擎邏輯
- */
-const CONFIG = {
-    noteSpeed: 5,        // 音符下落速度 (像素/幀)
-    spawnInterval: 800,  // 生成音符間隔 (毫秒)
-    judgeY: window.innerHeight - 200, // 判定線位置
-    tolerance: 50        // 判定容差 (像素)
-};
+    const CONFIG = {
+        speed: 4,        // 像素/幀
+        loopHeight: 600, // 一個完整小節的高度
+    };
 
-let state = {
-    score: 0,
-    combo: 0,
-    isPlaying: false,
-    notes: [], // 儲存當前畫面上的音符
-    lastSpawn: 0
-};
+    let state = {
+        notes: [],
+        frame: 0
+    };
 
-const notesLayer = document.getElementById('notes-layer');
-const feedbackEl = document.getElementById('feedback');
+    function spawnNotes() {
+        const notes2 = document.getElementById('notes-2');
+        const notes3 = document.getElementById('notes-3');
 
-// 1. 遊戲主循環
-function gameLoop(timestamp) {
-    if (!state.isPlaying) return;
+        // 每 600 像素為一個大循環（1小節）
+        // 生成 2 拍音符：位於 0% 和 50% 的位置
+        [0, 300].forEach(y => {
+            createNote(notes2, y, 'note-2');
+        });
 
-    // 自動生成音符 (2-3 拍邏輯模擬：隨機左右出現)
-    if (timestamp - state.lastSpawn > CONFIG.spawnInterval) {
-        spawnNote(Math.floor(Math.random() * 2));
-        state.lastSpawn = timestamp;
+        // 生成 3 拍音符：位於 0%, 200%, 400% 的位置
+        [0, 200, 400].forEach(y => {
+            createNote(notes3, y, 'note-3');
+        });
     }
 
-    // 更新音符位置
-    state.notes.forEach((note, index) => {
-        note.y += CONFIG.noteSpeed;
-        note.el.style.transform = `translateY(${note.y}px)`;
-
-        // 超過判定線未擊中 (Miss)
-        if (note.y > window.innerHeight - 150) {
-            note.el.remove();
-            state.notes.splice(index, 1);
-            showFeedback('MISS', '#ff4444');
-            state.combo = 0;
-            updateHUD();
-        }
-    });
-
-    requestAnimationFrame(gameLoop);
-}
-
-// 2. 生成音符
-function spawnNote(lane) {
-    const noteEl = document.createElement('div');
-    noteEl.className = `note ${lane === 1 ? 'note-right' : ''}`;
-    // 設置左右位置
-    noteEl.style.left = lane === 0 ? '10%' : '60%';
-    noteEl.style.top = '0px';
-    
-    notesLayer.appendChild(noteEl);
-    state.notes.push({
-        el: noteEl,
-        y: 0,
-        lane: lane
-    });
-}
-
-// 3. 處理擊打判定
-function handleHit(lane) {
-    if (!state.isPlaying) return;
-
-    // 尋找該軌道中最接近判定線的音符
-    const targetIndex = state.notes.findIndex(n => n.lane === lane && Math.abs(n.y - (window.innerHeight - 220)) < 100);
-
-    if (targetIndex !== -1) {
-        const note = state.notes[targetIndex];
-        const dist = Math.abs(note.y - (window.innerHeight - 220));
-
-        if (dist < 40) {
-            showFeedback('PERFECT', '#ffeb3b');
-            state.score += 100;
-        } else {
-            showFeedback('GOOD', '#00f2ff');
-            state.score += 50;
-        }
-
-        state.combo++;
-        note.el.remove();
-        state.notes.splice(targetIndex, 1);
-        updateHUD();
+    function createNote(parent, y, className) {
+        const el = document.createElement('div');
+        el.className = `note ${className}`;
+        parent.appendChild(el);
+        state.notes.push({
+            el: el,
+            y: -y, // 從上方負值開始
+            active: true
+        });
     }
-}
 
-function showFeedback(text, color) {
-    feedbackEl.innerText = text;
-    feedbackEl.style.color = color;
-    feedbackEl.classList.remove('anim-pop');
-    void feedbackEl.offsetWidth; 
-    feedbackEl.classList.add('anim-pop');
-}
+    function update() {
+        state.notes.forEach((note, index) => {
+            note.y += CONFIG.speed;
+            note.el.style.transform = `translateY(${note.y}px)`;
 
-function updateHUD() {
-    document.getElementById('score').innerText = `SCORE: ${state.score}`;
-    document.getElementById('combo').innerText = `COMBO: ${state.combo}`;
-}
+            // 循環邏輯：如果音符跑出底端，重新回到頂端（形成無窮盡的練習流）
+            if (note.y > window.innerHeight) {
+                note.y = -CONFIG.loopHeight + (note.y - window.innerHeight);
+            }
+        });
 
-// 4. 事件綁定
-document.getElementById('start-btn').addEventListener('click', () => {
-    document.getElementById('overlay').style.display = 'none';
-    state.isPlaying = true;
-    state.lastSpawn = performance.now();
-    requestAnimationFrame(gameLoop);
-});
+        requestAnimationFrame(update);
+    }
 
-// 鍵盤支援
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'f' || e.key === 'F') handleHit(0);
-    if (e.key === 'j' || e.key === 'J') handleHit(1);
-});
-
-// 點擊支援
-document.getElementById('btn-0').addEventListener('touchstart', (e) => { e.preventDefault(); handleHit(0); });
-document.getElementById('btn-1').addEventListener('touchstart', (e) => { e.preventDefault(); handleHit(1); });
-document.getElementById('btn-0').addEventListener('mousedown', () => handleHit(0));
-document.getElementById('btn-1').addEventListener('mousedown', () => handleHit(1));
+    // 初始化
+    spawnNotes();
+    update();
 
 </script>
 </body>
